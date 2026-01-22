@@ -1,0 +1,928 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#07070c" />
+  <meta name="description" content="Facebook, Instagram, TikTok, Portfolio (Coming Soon)" />
+  <title>link-tree</title>
+
+  <style>
+    :root{
+      --bg0:#06060b;
+      --bg1:#0a0c14;
+      --card: rgba(255,255,255,.055);
+      --card2: rgba(255,255,255,.085);
+      --stroke: rgba(255,255,255,.12);
+      --stroke2: rgba(255,255,255,.18);
+      --text:#f3f5ff;
+      --muted:#aeb7d3;
+
+      /* Luxury accents */
+      --gold1:#f6d37b;
+      --gold2:#b98b2f;
+      --violet:#7c5cff;
+      --mint:#2ee9a6;
+      --plasma:#7af0ff;
+      --rose:#ff4d7d;
+
+      --shadow: 0 30px 110px rgba(0,0,0,.62);
+      --shadow2: 0 14px 36px rgba(0,0,0,.35);
+
+      --r1: 28px;
+      --r2: 18px;
+      --ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    [data-theme="light"]{
+      --bg0:#f7f7fb;
+      --bg1:#edf0fb;
+      --card: rgba(10,10,16,.06);
+      --card2: rgba(10,10,16,.09);
+      --stroke: rgba(10,10,16,.12);
+      --stroke2: rgba(10,10,16,.16);
+      --text:#090a12;
+      --muted:#4c5875;
+
+      --shadow: 0 22px 80px rgba(20,25,50,.14);
+      --shadow2: 0 12px 28px rgba(20,25,50,.12);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font: 15px/1.35 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 800px at 22% -10%, rgba(124,92,255,.22), transparent 60%),
+        radial-gradient(1000px 760px at 110% 10%, rgba(122,240,255,.14), transparent 55%),
+        radial-gradient(1000px 740px at 35% 120%, rgba(246,211,123,.17), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
+
+    .sr-only{
+      position:absolute!important;
+      width:1px;height:1px;
+      padding:0;margin:-1px;
+      overflow:hidden;clip:rect(0,0,0,0);
+      white-space:nowrap;border:0;
+    }
+
+    /* Full-scene sci-fi layer */
+    .scene{
+      position:fixed; inset:0;
+      pointer-events:none; z-index:-1;
+    }
+
+    /* WebGL-like starfield using canvas */
+    canvas#starfield{
+      position:absolute; inset:0;
+      width:100%; height:100%;
+      opacity:.65;
+      filter: saturate(1.05) contrast(1.05);
+    }
+
+    /* Orbs + grid */
+    .orb{
+      position:absolute;
+      width:600px;height:600px;
+      filter: blur(65px);
+      opacity:.55;
+      transform: translateZ(0);
+    }
+    .orb.a{left:-210px;top:-240px;background:radial-gradient(circle at 30% 30%, rgba(246,211,123,.55), transparent 58%)}
+    .orb.b{right:-260px;top:-200px;background:radial-gradient(circle at 30% 30%, rgba(124,92,255,.45), transparent 60%)}
+    .orb.c{left:18%;bottom:-360px;background:radial-gradient(circle at 30% 30%, rgba(46,233,166,.24), transparent 62%)}
+    .orb.d{right:10%;bottom:-420px;background:radial-gradient(circle at 30% 30%, rgba(122,240,255,.18), transparent 62%)}
+
+    .grid{
+      position:absolute; inset:-1px;
+      opacity:.12;
+      background-image:
+        linear-gradient(rgba(255,255,255,.14) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.14) 1px, transparent 1px);
+      background-size: 88px 88px;
+      mask-image: radial-gradient(circle at 32% 22%, black 40%, transparent 72%);
+      transform: translateZ(0);
+    }
+
+    /* Moving scanlines */
+    .scan{
+      position:absolute; inset:0;
+      opacity:.08;
+      background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        rgba(255,255,255,.10) 50%,
+        transparent 100%
+      );
+      background-size: 100% 220px;
+      animation: scan 7s linear infinite;
+      mix-blend-mode: overlay;
+    }
+    @keyframes scan{
+      from{background-position: 0 -220px;}
+      to{background-position: 0 220px;}
+    }
+
+    /* Grain */
+    .grain{
+      position:absolute; inset:0;
+      opacity:.12; mix-blend-mode:overlay;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.25'/%3E%3C/svg%3E");
+    }
+
+    /* Layout */
+    .wrap{max-width:980px;margin:0 auto;padding:44px 18px 70px}
+    header{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+
+    .avatar{
+      width:66px;height:66px;border-radius:24px;
+      position:relative;overflow:hidden;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255,255,255,.35), transparent 52%),
+        linear-gradient(135deg, rgba(246,211,123,.90), rgba(185,139,47,.55));
+      box-shadow: var(--shadow2);
+      border:1px solid rgba(255,255,255,.14);
+      flex:0 0 auto;
+    }
+    .shine{
+      position:absolute; inset:-60% -60% auto auto;
+      width:145%; height:145%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.45), transparent 45%);
+      transform: rotate(25deg);
+    }
+
+    .pill{
+      display:inline-flex;align-items:center;gap:10px;
+      border-radius:999px;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.05);
+      color:var(--text);
+      padding:10px 12px;
+      cursor:pointer;
+      transition: transform .18s var(--ease), background .18s var(--ease), border-color .18s var(--ease);
+      user-select:none;
+    }
+    .pill:hover{transform:translateY(-1px);background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18)}
+    [data-theme="light"] .pill:hover{background:rgba(10,10,16,.06);border-color:rgba(10,10,16,.16)}
+    .pill:active{transform:translateY(0)}
+    .pill:focus{outline:none}
+    .pill:focus-visible{outline:3px solid rgba(246,211,123,.25);outline-offset:2px}
+
+    .title{
+      margin:0;
+      font-size: 28px;
+      font-weight: 680;
+      letter-spacing: .20em;
+      text-transform: uppercase;
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(246,211,123,.72));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 18px 40px rgba(0,0,0,.35);
+    }
+    .subtitle{margin:0;color:var(--muted);font-size:14px}
+
+    .meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:6px}
+    .meta .chip{
+      font-size:12px;border-radius:999px;padding:8px 10px;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.05);
+      box-shadow: 0 8px 22px rgba(0,0,0,.12);
+    }
+    .chip.btn{cursor:pointer;transition:transform .18s var(--ease), background .18s var(--ease), border-color .18s var(--ease)}
+    .chip.btn:hover{transform:translateY(-1px);background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18)}
+    [data-theme="light"] .chip.btn:hover{background:rgba(10,10,16,.06);border-color:rgba(10,10,16,.16)}
+    .chip.btn:active{transform:translateY(0)}
+    .chip.btn:focus{outline:none}
+    .chip.btn:focus-visible{outline:3px solid rgba(124,92,255,.25);outline-offset:2px}
+
+    /* Panel */
+    .panel{
+      border-radius: var(--r1);
+      border:1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.03));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+
+    /* Luxury "hologlass" edge */
+    .panel::before{
+      content:"";
+      position:absolute; inset:0;
+      border-radius: var(--r1);
+      padding:1px;
+      background: linear-gradient(120deg,
+        rgba(246,211,123,.34),
+        rgba(124,92,255,.22),
+        rgba(46,233,166,.16),
+        rgba(122,240,255,.18)
+      );
+      -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events:none;
+      opacity:.75;
+    }
+
+    .panel-head{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      padding:14px;border-bottom:1px solid var(--stroke);
+      position:relative;
+      z-index:1;
+      backdrop-filter: blur(10px);
+    }
+
+    .search{position:relative;flex:1;min-width:180px}
+    .search .icon{
+      position:absolute;left:12px;top:50%;transform:translateY(-50%);
+      opacity:.82;
+    }
+    .search input{
+      width:100%;
+      padding:12px 12px 12px 36px;
+      border-radius:16px;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.05);
+      color:var(--text);
+      transition: border-color .18s var(--ease), background .18s var(--ease);
+    }
+    .search input::placeholder{color:rgba(174,183,211,.72)}
+    [data-theme="light"] .search input::placeholder{color:rgba(76,88,117,.65)}
+    .search input:focus{outline:none;border-color:rgba(246,211,123,.38);background:rgba(255,255,255,.08)}
+
+    .stats{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;white-space:nowrap}
+    .dot{
+      width:8px;height:8px;border-radius:999px;
+      background: linear-gradient(135deg, rgba(246,211,123,.95), rgba(124,92,255,.75));
+      box-shadow: 0 0 18px rgba(124,92,255,.16);
+    }
+
+    .list{padding:14px;display:grid;gap:12px;position:relative;z-index:1}
+
+    /* Link cards */
+    .card{
+      position:relative;
+      border-radius: var(--r2);
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.04);
+      overflow:hidden;
+      transform: translateZ(0);
+      transition: transform .18s var(--ease), border-color .18s var(--ease), background .18s var(--ease);
+    }
+    .card:hover{transform: translateY(-2px);background: rgba(255,255,255,.06);border-color: rgba(255,255,255,.18)}
+    [data-theme="light"] .card:hover{background: rgba(10,10,16,.055);border-color: rgba(10,10,16,.14)}
+
+    /* "Specular highlight" sweep on hover */
+    .card::after{
+      content:"";
+      position:absolute; inset:-40% -60% auto auto;
+      width:140%; height:140%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.28), transparent 45%);
+      transform: rotate(25deg);
+      opacity:0;
+      transition: opacity .18s var(--ease);
+      pointer-events:none;
+    }
+    .card:hover::after{opacity:.9}
+
+    .card > a, .card > button{
+      width:100%;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:14px;
+      color:inherit;
+      text-decoration:none;
+      background:transparent;
+      border:0;
+      text-align:left;
+      cursor:pointer;
+    }
+    .card > button[aria-disabled="true"]{cursor:not-allowed}
+
+    .badge{
+      font-size:11px;
+      padding:5px 8px;
+      border-radius:999px;
+      border:1px solid rgba(246,211,123,.35);
+      background: rgba(246,211,123,.12);
+      color:var(--text);
+    }
+    .badge.hot{border-color: rgba(46,233,166,.45);background: rgba(46,233,166,.12)}
+    .badge.soon{border-color: rgba(255,255,255,.18);background: rgba(255,255,255,.06);color:var(--muted)}
+    [data-theme="light"] .badge.soon{color:var(--muted)}
+
+    .iconbox{
+      width:44px;height:44px;border-radius:16px;
+      display:grid;place-items:center;
+      border:1px solid var(--stroke);
+      background: linear-gradient(135deg, rgba(246,211,123,.18), rgba(124,92,255,.10));
+      box-shadow: var(--shadow2);
+      flex:0 0 auto;
+    }
+
+    .meta2{min-width:0;flex:1}
+    .meta2 h3{
+      margin:0;
+      font-size:15px;
+      letter-spacing:.2px;
+      display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    }
+    .meta2 p{
+      margin:4px 0 0;
+      font-size:13px;
+      color:var(--muted);
+      overflow:hidden;
+      text-overflow:ellipsis;
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+    }
+
+    .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+    .tag{
+      font-size:11px;
+      padding:5px 9px;
+      border-radius:999px;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.03);
+      color:var(--muted);
+    }
+
+    .arrow{
+      opacity:.85;
+      flex:0 0 auto;
+      transition: transform .18s var(--ease), opacity .18s var(--ease);
+    }
+    .card:hover .arrow{transform: translateX(3px);opacity:1}
+
+    /* "Holo edge glow" */
+    .glow{
+      pointer-events:none;
+      position:absolute;inset:0;
+      border-radius: var(--r2);
+      opacity:0;
+      transition: opacity .18s var(--ease);
+      box-shadow: 0 0 0 1px rgba(246,211,123,.10), 0 0 46px rgba(124,92,255,.14), 0 0 38px rgba(122,240,255,.10);
+    }
+    .card:hover .glow{opacity:1}
+
+    /* Footer */
+    footer{
+      display:flex;flex-wrap:wrap;
+      align-items:center;justify-content:space-between;gap:12px;
+      padding:12px 14px;
+      border-top:1px solid var(--stroke);
+      color:var(--muted);
+      font-size:12px;
+      background: linear-gradient(180deg, transparent, rgba(255,255,255,.04));
+      position:relative;
+      z-index:1;
+      backdrop-filter: blur(8px);
+    }
+    footer a{
+      color:var(--muted);
+      text-decoration:none;
+      border-bottom:1px dashed transparent;
+    }
+    footer a:hover{border-bottom-color:var(--muted)}
+
+    /* Toast */
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:22px;
+      transform: translateX(-50%) translateY(10px);
+      opacity:0;
+      z-index:9999;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--stroke);
+      background: rgba(10,12,22,.72);
+      backdrop-filter: blur(12px);
+      color:var(--text);
+      box-shadow: var(--shadow2);
+      font-size:13px;
+      transition: opacity .18s var(--ease), transform .18s var(--ease);
+      pointer-events:none;
+    }
+    [data-theme="light"] .toast{ background: rgba(255,255,255,.72); color:var(--text) }
+    .toast.show{opacity:1;transform: translateX(-50%) translateY(-2px)}
+
+    /* Subtle motion rules */
+    @media (prefers-reduced-motion: reduce){
+      *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+      .card:hover,.pill:hover,.chip.btn:hover{transform:none!important}
+      .scan{display:none!important}
+      canvas#starfield{display:none!important}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="scene" aria-hidden="true">
+    <canvas id="starfield"></canvas>
+    <div class="orb a"></div>
+    <div class="orb b"></div>
+    <div class="orb c"></div>
+    <div class="orb d"></div>
+    <div class="grid"></div>
+    <div class="scan"></div>
+    <div class="grain"></div>
+  </div>
+
+  <main class="wrap" id="top">
+    <header>
+      <div class="top">
+        <div class="avatar" aria-hidden="true">
+          <!-- Optional: <img src="assets/avatar.png" alt="" /> -->
+          <span class="shine"></span>
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+          <button class="pill" id="themeBtn" type="button" aria-label="Toggle theme">
+            <span aria-hidden="true">◐</span>
+            <span>Theme</span>
+          </button>
+          <button class="pill" id="fxBtn" type="button" aria-label="Toggle effects">
+            <span aria-hidden="true">✦</span>
+            <span>FX</span>
+          </button>
+        </div>
+      </div>
+
+      <h1 class="title" id="displayName">YOUR NAME</h1>
+      <p class="subtitle" id="displayBio">Ultra-Luxury • Sci-Fi • Holo-Glass</p>
+
+      <div class="meta">
+        <span class="chip" id="statusPill">Online</span>
+        <button class="chip btn" id="copyBtn" type="button">Copy page link</button>
+      </div>
+    </header>
+
+    <section class="panel" aria-label="Links">
+      <div class="panel-head">
+        <div class="search">
+          <span class="icon" aria-hidden="true">⌕</span>
+          <label class="sr-only" for="searchInput">Search links</label>
+          <input id="searchInput" type="search" placeholder="Search (facebook, instagram, tiktok, portfolio)…" autocomplete="off" />
+        </div>
+
+        <div class="stats" aria-hidden="true">
+          <span class="dot"></span>
+          <span id="countTxt">4 links</span>
+        </div>
+      </div>
+
+      <div class="list" id="links"></div>
+
+      <footer>
+        <span>© <span id="year"></span> <span id="footerName">YOUR NAME</span></span>
+        <a href="#top" id="backTop">Back to top</a>
+      </footer>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script>
+    "use strict";
+
+    /* ==========================================================
+       ULTRA-LUX SCI-FI LINK HUB (no dependencies, works on vscode.dev)
+       - Starfield parallax canvas (GPU-friendly)
+       - Mouse "holo" tilt on cards (safe transform)
+       - Theme persistence
+       - FX toggle (for performance / preference)
+       - URL safety guard
+       ========================================================== */
+
+    // ===== CONFIG: edit these safely =====
+    const PROFILE = {
+      name: "Lewis",
+      bio: "Welcolme! This is my link tree.",
+      status: "Online",
+      footerName: "Lewis"
+    };
+
+    // Replace href values with your real profiles
+    const LINKS = [
+      {
+        id: "facebook",
+        title: "Facebook",
+        subtitle: "Official page • updates & posts",
+        href: "https://www.facebook.com/people/Lewis-Ward/pfbid048ZDyYp83Y2it5A81dxcoc8ceAusyRaqkSArodWHfPCqZzCu9c6RWXtLxPz6zUAol/?mibextid=wwXIfr&rdid=vrm01lNhMkUv3qZB&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F1C4AsEnNG9%2F%3Fmibextid%3DwwXIfr",
+        badge: "silver",
+        badgeStyle: "silver",
+        tags: ["social", "meta"],
+        icon: "facebook"
+      },
+      {
+        id: "instagram",
+        title: "Instagram",
+        subtitle: "Stories • reels • daily visuals",
+        href: "https://www.instagram.com/lewisw__.__?igsh=dmkydXVoaDEyNXZk&utm_source=qr",
+        badge: "gold",
+        badgeStyle: "gold",
+        tags: ["social", "reels", "photos"],
+        icon: "instagram"
+      },
+      {
+        id: "tiktok",
+        title: "TikTok",
+        subtitle: "Short form • trends • clips",
+        href: "https://www.tiktok.com/@lewis__.__",
+        badge: "New",
+        badgeStyle: "gold",
+        tags: ["social", "video", "shorts"],
+        icon: "tiktok"
+      },
+      {
+        id: "portfolio",
+        title: "Portfolio",
+        subtitle: "High-end case studies • launching soon",
+        href: null, // disabled
+        badge: "Coming Soon",
+        badgeStyle: "soon",
+        tags: ["work", "portfolio", "comingsoon"],
+        icon: "portfolio"
+      }
+    ];
+
+    // ===== Mini helpers =====
+    const $ = (sel, root=document) => root.querySelector(sel);
+
+    function esc(s){
+      return String(s).replace(/[&<>"']/g, (c)=>({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      }[c]));
+    }
+
+    function isSafeUrl(href){
+      if (!href) return true;
+      const t = String(href).trim();
+      const l = t.toLowerCase();
+      if (l.startsWith("javascript:") || l.startsWith("data:")) return false;
+      return true;
+    }
+
+    function toast(msg){
+      const el = $("#toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      window.clearTimeout(toast._t);
+      toast._t = window.setTimeout(()=> el.classList.remove("show"), 1600);
+    }
+
+    function iconSVG(name){
+      if(name === "facebook") return `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M14 8h3V5h-3c-2 0-4 2-4 4v3H7v3h3v6h3v-6h3l1-3h-4V9c0-.6.4-1 1-1Z"
+            stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>`;
+      if(name === "instagram") return `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M7 7h10v10H7V7Z" stroke="currentColor" stroke-width="2" />
+          <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="2"/>
+          <path d="M17.5 6.5h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+        </svg>`;
+      if(name === "tiktok") return `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M14 3v11.2a3.8 3.8 0 1 1-3-3.7V7.2c.9 1.3 2.5 2.3 5 2.4V6.5c-1.2-.1-2.2-.7-2.8-1.5Z"
+            stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>`;
+      return `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>`;
+    }
+
+    function cardHTML(l){
+      const disabled = !l.href;
+      const badgeClass = l.badgeStyle === "hot" ? "hot" : (l.badgeStyle === "soon" ? "soon" : "");
+      const badge = l.badge ? `<span class="badge ${badgeClass}">${esc(l.badge)}</span>` : "";
+      const tags = (l.tags && l.tags.length)
+        ? `<div class="tags">${l.tags.slice(0,4).map(t=>`<span class="tag">#${esc(t)}</span>`).join("")}</div>`
+        : "";
+
+      const inner = `
+        <div class="iconbox">${iconSVG(l.icon)}</div>
+        <div class="meta2">
+          <h3>${esc(l.title)} ${badge}</h3>
+          <p>${esc(l.subtitle || "")}</p>
+          ${tags}
+        </div>
+        <div class="arrow" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="glow" aria-hidden="true"></div>
+      `;
+
+      if(disabled){
+        return `
+          <div class="card" data-tilt="1">
+            <button type="button" aria-disabled="true" title="Coming soon">
+              ${inner}
+            </button>
+          </div>
+        `;
+      }
+
+      const href = String(l.href || "").trim();
+      if(!isSafeUrl(href)){
+        return `
+          <div class="card" data-tilt="1">
+            <button type="button" aria-disabled="true" title="Unsafe URL blocked">
+              ${inner}
+            </button>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="card" data-tilt="1">
+          <a href="${esc(href)}" target="_blank" rel="noopener noreferrer"
+             aria-label="${esc(l.title)} (opens in a new tab)">
+            ${inner}
+          </a>
+        </div>
+      `;
+    }
+
+    function render(){
+      const q = ($("#searchInput").value || "").trim().toLowerCase();
+      const filtered = LINKS.filter(l=>{
+        const hay = [l.title, l.subtitle, ...(l.tags||[])].join(" ").toLowerCase();
+        return !q || hay.includes(q);
+      });
+
+      $("#countTxt").textContent = `${filtered.length} link${filtered.length===1?"":"s"}`;
+      $("#links").innerHTML = filtered.map(cardHTML).join("") || `
+        <div class="card" data-tilt="0">
+          <button type="button" aria-disabled="true">
+            <div class="meta2">
+              <h3>No matches <span class="badge soon">Try again</span></h3>
+              <p>Search different keywords (facebook, instagram, tiktok, portfolio).</p>
+            </div>
+          </button>
+          <div class="glow" aria-hidden="true"></div>
+        </div>
+      `;
+
+      // Rebind tilt after rerender
+      bindTilt();
+    }
+
+    // ===== Theme =====
+    function setTheme(theme){
+      document.documentElement.dataset.theme = theme;
+      try { localStorage.setItem("theme", theme); } catch {}
+    }
+    function initTheme(){
+      let saved = null;
+      try { saved = localStorage.getItem("theme"); } catch {}
+      if(saved === "light" || saved === "dark"){ setTheme(saved); return; }
+      const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+      setTheme(prefersLight ? "light" : "dark");
+    }
+
+    // ===== Copy =====
+    function copyPageLink(){
+      const url = location.href;
+      const ok = ()=> toast("Copied link.");
+      const fail = ()=> toast("Could not copy — copy manually.");
+
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(url).then(ok).catch(fail);
+        return;
+      }
+      try{
+        const t = document.createElement("textarea");
+        t.value = url;
+        document.body.appendChild(t);
+        t.select();
+        document.execCommand("copy");
+        t.remove();
+        ok();
+      }catch{ fail(); }
+    }
+
+    // ===== FX Toggle =====
+    let FX_ENABLED = true;
+    function setFX(on){
+      FX_ENABLED = !!on;
+      const canvas = $("#starfield");
+      canvas.style.display = FX_ENABLED ? "" : "none";
+      document.querySelector(".scan").style.display = FX_ENABLED ? "" : "none";
+      toast(FX_ENABLED ? "FX enabled." : "FX disabled.");
+    }
+
+    // ===== Starfield (canvas) =====
+    const star = {
+      canvas: null,
+      ctx: null,
+      w: 0,
+      h: 0,
+      dpr: 1,
+      stars: [],
+      raf: 0,
+      mx: 0,
+      my: 0,
+      lastT: 0
+    };
+
+    function resizeCanvas(){
+      const c = star.canvas;
+      const rect = c.getBoundingClientRect();
+      star.dpr = Math.min(2, window.devicePixelRatio || 1);
+      star.w = Math.floor(rect.width * star.dpr);
+      star.h = Math.floor(rect.height * star.dpr);
+      c.width = star.w;
+      c.height = star.h;
+      star.ctx.setTransform(1,0,0,1,0,0);
+      star.ctx.scale(star.dpr, star.dpr);
+      seedStars();
+    }
+
+    function seedStars(){
+      const count = Math.round(Math.min(240, Math.max(140, (window.innerWidth * window.innerHeight) / 9000)));
+      star.stars = [];
+      for(let i=0;i<count;i++){
+        star.stars.push({
+          x: Math.random() * window.innerWidth,
+          y: Math.random() * window.innerHeight,
+          z: Math.random() * 1 + 0.2,        // depth
+          r: Math.random() * 1.2 + 0.2,      // radius
+          s: Math.random() * 0.6 + 0.25      // speed
+        });
+      }
+    }
+
+    function drawStars(dt){
+      const ctx = star.ctx;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+
+      ctx.clearRect(0,0,w,h);
+
+      // subtle vignette
+      const vg = ctx.createRadialGradient(w*0.35,h*0.25, 50, w*0.35,h*0.25, Math.max(w,h));
+      vg.addColorStop(0, "rgba(255,255,255,0.03)");
+      vg.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = vg;
+      ctx.fillRect(0,0,w,h);
+
+      const px = (star.mx - 0.5) * 18;
+      const py = (star.my - 0.5) * 12;
+
+      for(const s of star.stars){
+        // drift
+        s.y += s.s * dt * 0.06 * (0.7 + s.z);
+        if(s.y > h + 10){ s.y = -10; s.x = Math.random() * w; }
+
+        const x = s.x + px * s.z;
+        const y = s.y + py * s.z;
+
+        // color tint: gold + plasma
+        const a = 0.22 + s.z * 0.25;
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(122,240,255,${a})`;
+        ctx.arc(x, y, s.r, 0, Math.PI*2);
+        ctx.fill();
+
+        if (s.z > 0.85) {
+          ctx.beginPath();
+          ctx.fillStyle = `rgba(246,211,123,${a*0.55})`;
+          ctx.arc(x+0.6, y-0.4, s.r*0.75, 0, Math.PI*2);
+          ctx.fill();
+        }
+      }
+    }
+
+    function loop(t){
+      if(!FX_ENABLED) return;
+      const dt = Math.min(32, t - (star.lastT || t));
+      star.lastT = t;
+      drawStars(dt);
+      star.raf = requestAnimationFrame(loop);
+    }
+
+    // ===== Holo tilt on cards =====
+    let tiltBound = false;
+    function bindTilt(){
+      // Avoid rebinding repeatedly (but new cards may appear); do lightweight rebind.
+      const cards = document.querySelectorAll(".card[data-tilt='1']");
+      cards.forEach(card => {
+        if (card._tiltBound) return;
+        card._tiltBound = true;
+
+        const max = 6; // degrees
+        const onMove = (e)=>{
+          if(!FX_ENABLED) return;
+          const r = card.getBoundingClientRect();
+          const cx = r.left + r.width/2;
+          const cy = r.top + r.height/2;
+          const dx = (e.clientX - cx) / (r.width/2);
+          const dy = (e.clientY - cy) / (r.height/2);
+          const rx = (-dy * max);
+          const ry = (dx * max);
+          card.style.transform = `translateY(-2px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+        };
+        const onLeave = ()=>{
+          card.style.transform = "";
+        };
+
+        card.addEventListener("mousemove", onMove, { passive:true });
+        card.addEventListener("mouseleave", onLeave, { passive:true });
+      });
+
+      if(!tiltBound){
+        tiltBound = true;
+        // Global pointer for parallax stars
+        window.addEventListener("pointermove", (e)=>{
+          star.mx = e.clientX / Math.max(1, window.innerWidth);
+          star.my = e.clientY / Math.max(1, window.innerHeight);
+        }, { passive:true });
+      }
+    }
+
+    // ===== Init =====
+    (function init(){
+      initTheme();
+
+      $("#displayName").textContent = PROFILE.name;
+      $("#displayBio").textContent = PROFILE.bio;
+      $("#statusPill").textContent = PROFILE.status;
+      $("#footerName").textContent = PROFILE.footerName;
+      $("#year").textContent = String(new Date().getFullYear());
+
+      $("#themeBtn").addEventListener("click", ()=>{
+        const cur = document.documentElement.dataset.theme || "dark";
+        const next = (cur === "dark") ? "light" : "dark";
+        setTheme(next);
+        toast("Theme updated.");
+      });
+
+      $("#fxBtn").addEventListener("click", ()=> setFX(!FX_ENABLED));
+      $("#copyBtn").addEventListener("click", copyPageLink);
+      $("#searchInput").addEventListener("input", render);
+
+      // Setup starfield
+      star.canvas = $("#starfield");
+      star.ctx = star.canvas.getContext("2d", { alpha: true });
+
+      const onResize = ()=>{
+        if(!star.ctx) return;
+        resizeCanvas();
+      };
+
+      // Make canvas match the viewport
+      star.canvas.style.width = "100%";
+      star.canvas.style.height = "100%";
+
+      window.addEventListener("resize", onResize, { passive:true });
+      onResize();
+
+      // Respect reduced motion
+      const prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if(prefersReduced){
+        setFX(false);
+      }
+
+      render();
+      bindTilt();
+
+      // Start loop
+      if(FX_ENABLED){
+        cancelAnimationFrame(star.raf);
+        star.raf = requestAnimationFrame(loop);
+      }
+
+      // Restart loop when FX toggles on
+      const _setFX = setFX;
+      setFX = function(on){
+        _setFX(on);
+        if(FX_ENABLED){
+          star.lastT = 0;
+          cancelAnimationFrame(star.raf);
+          star.raf = requestAnimationFrame(loop);
+        }else{
+          cancelAnimationFrame(star.raf);
+        }
+      };
+    })();
+  </script>
+</body>
+</html>
+
